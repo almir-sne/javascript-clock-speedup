@@ -23,7 +23,7 @@
 
     var NativeDate = window.Date;
     var startDate = new NativeDate();
-    var speedupFactor = 4;
+    var speedupFactor = 2.4;
     var factorAdjustment = 0; // used when the speedup factor changes and the startDate is reset....
 
     var CustomDate = function(){
@@ -36,7 +36,7 @@
                 definedArgs.push(args[i]);
             }
         }
-        var args = definedArgs
+        var args = definedArgs;
 
         if (! (args[0] instanceof CustomDate))
         {
@@ -98,76 +98,93 @@
     };
 
     var showUi = true; // set to false by hideUi, in case document ready is triggered after calling hideUi
-    if (window.jQuery)
-    {
+    var inputCss = {
+        "display": "inline-block",
+        "margin-left": "2px",
+        "margin-right": "2px",
+        "text-align": "center",
+        "width": "70px"
+    };
+
+    if (window.jQuery) {
         var $ = window.jQuery;
         var container = $("<div>")
             .css({
                 "position": "absolute",
-                "bottom": "1px",
+                "top": "1px",
                 "padding": "10px",
                 "background": "#eee",
                 "border": "1px solid #999",
                 "left": "1px"
-            })
-            .prop("title", "Use Date.hideUi() to hide this programmatically.");
+            });
+        var hours = $("<input>")
+            .attr({type: "number", value: 12})
+            .css(inputCss);
+        container.append($("<label>").text("Hours: "), hours);
+        var minutes = $("<input>")
+            .attr({type: "number", value: 0 })
+            .css(inputCss);
+        container.append($("<label>").text("Minutes: "), minutes);
+
         var nowDiv = $("<div>")
             .css("display", "inline-block");
         container.append(nowDiv);
-        var increaseSpeedupButton = $("<button>")
-            .css("display", "inline-block")
-            .css("margin-left", "10px")
-            .click(function(){
-                CustomDate.setSpeedupFactor(speedupFactor * 2);
-                speedupFactorInfo.text(speedupFactor + "x");
-            })
-            .text("+");
-        var decreaseSpeedupButton = $("<button>")
-            .css("display", "inline-block")
-             .click(function(){
-                CustomDate.setSpeedupFactor(speedupFactor / 2);
-                speedupFactorInfo.text(speedupFactor + "x");
-            })
-            .text("-");
-        var speedupFactorInfo = $("<div>")
-            .css({"display": "inline-block",
-                "margin-left": "2px",
-                "margin-right": "2px",
-                "text-align": "center",
-                "min-width": "48px" // avoid buttons moving away from under the cursor
-                })
-            .text(speedupFactor + "x");
-        var hideUiButton = $("<button>")
+        var speedupFactorInfo = $("<input>")
+            .attr({type: "number", value: speedupFactor})
+            .css(inputCss);
+        var resetButton = $("<button>")
             .css("display", "inline-block")
             .css("font-size", "10px")
             .css("margin-left", "10px")
-            .click(function(){
-                CustomDate.hideUi();
+            .click(function () {
+                CustomDate.setInterval(hours.val(), minutes.val(), speedupFactorInfo.val());
             })
-            .text("Close");
+            .text("Reset");
 
-        container.append(decreaseSpeedupButton, speedupFactorInfo, increaseSpeedupButton, hideUiButton);
-        var nowDivInterval = setInterval(function(){
+        container.append(speedupFactorInfo, resetButton);
+        var nowDivInterval;
+        CustomDate.setInterval = function(hours, minutes, speed) {
+            if(nowDivInterval) {
+                clearInterval(nowDivInterval);
+            }
             var now = new CustomDate();
+            var countDownDate = new CustomDate(now);
+            countDownDate.setMinutes(countDownDate.getMinutes() + Number(hours) * 60 + Number(minutes));
 
-            var month = now.getMonth() + 1;
-            if (month < 10){
-               month = '0' + month;
-            }
-            var day = now.getDate();
-            if (day < 10){
-               day = '0' + day;
-            }
-            nowDiv.text(now.getFullYear() + "-" + (month) + "-" +
-                day + " "+ now.toTimeString().split(" ")[0]);
-        }, 200);
+            speedupFactor = Number(speed);
 
-        $(document).ready(function(){
-            if (showUi)
-            {
-                $("body").append(container);
-            }
-        })
+            nowDivInterval = setInterval(function () {
+                var now = new CustomDate();
+
+                // https://www.w3schools.com/howto/howto_js_countdown.asp
+                // Find the distance between now an the count down date
+                var distance = countDownDate - now;
+
+                if (distance < 0) {
+                    distance = 0;
+                    document.getElementById("myAudio").play();
+                    clearInterval(nowDivInterval);
+                }
+
+                // Time calculations for days, hours, minutes and seconds
+                var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                // Display the result in the element with id="demo"
+                nowDiv.text(days + "d " + hours + "h "
+                    + minutes + "m " + seconds + "s ");
+            }, 200);
+
+            $(document).ready(function () {
+                if (showUi) {
+                    $("body").append(container);
+                }
+            })
+        };
+
+        CustomDate.setInterval(hours.val(), minutes.val(), speedupFactorInfo.val());
     }
 
     CustomDate.hideUi = function(){
@@ -176,7 +193,7 @@
     };
 
     window.Date = CustomDate;
-})()
+})();
 
 
 
